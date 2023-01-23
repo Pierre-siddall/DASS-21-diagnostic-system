@@ -7,7 +7,12 @@ def make_bow(words):
 
     for word, tag in words:
         if word not in bag.keys():
-            pass
+            bag[word]=1
+        else:
+            bag[word]+=1
+
+    return bag
+
 
 
 # Function 2
@@ -39,4 +44,5 @@ def blob_file(textfile):
 if __name__ == '__main__':
     my_blob = blob_file("Note.txt")
     tags = filter_tags(my_blob)
-    print(tags)
+    testBag= make_bow(tags)
+    print(testBag)
