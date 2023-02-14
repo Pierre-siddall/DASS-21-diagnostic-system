@@ -1,5 +1,16 @@
+import warnings
+import spacy
 from textblob import TextBlob
 
+warnings.filterwarnings("ignore")
+
+# Function 5
+def findSimilar(current):
+    pass
+
+# Function 4
+def isNegative(word,negative):
+    pass
 
 # Function 3
 def make_bow(words):
@@ -7,17 +18,16 @@ def make_bow(words):
 
     for word, tag in words:
         if word not in bag.keys():
-            bag[word]=1
+            bag[word] = 1
         else:
-            bag[word]+=1
+            bag[word] += 1
 
     return bag
 
-
-
+#
 # Function 2
 def filter_tags(blob):
-    # TODO-Make in-place
+    # TODO-Change to use spaCy
     tags = blob.tags
     accepted = ['JJ', 'JJR', 'JJS', 'NN', 'NNS', 'NNPS', 'RB', 'RBR', 'RBS', 'VB', 'VBD',
                 'VBG', 'VBN', 'VBP', 'VBZ']
@@ -44,5 +54,5 @@ def blob_file(textfile):
 if __name__ == '__main__':
     my_blob = blob_file("Note.txt")
     tags = filter_tags(my_blob)
-    testBag= make_bow(tags)
-    print(testBag)
+    print(tags)
+    testBag = make_bow(tags)
