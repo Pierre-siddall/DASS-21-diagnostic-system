@@ -57,7 +57,6 @@ def extract_training_text(csvfile):
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
-    spacy.cli.download("en")
     nlp = spacy.load("en_core_web_sm")
     test = extract_training_text("sectraining.csv")
     doc = tokenize_text(nlp, test[0][0])
