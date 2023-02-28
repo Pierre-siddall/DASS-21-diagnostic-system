@@ -1,5 +1,6 @@
 import main
 import unittest
+import spacy
 
 
 class TestTextExtraction(unittest.TestCase):
@@ -36,6 +37,32 @@ class TestTextExtraction(unittest.TestCase):
         self.assertTrue(removal)
 
 
+class TestFilterTags(unittest.TestCase):
+    def test_datatype(self):
+        nlp = spacy.load("en_core_web_sm")
+        data = main.extract_training_text("sectraining.csv")
+        test_case = main.tokenize_text(nlp, data[0][0])
+        filtered_test_case = main.filter_tags(test_case)
+
+        print(type(filtered_test_case))
+        print(type(filtered_test_case[0]))
+
+        self.assertEqual(type(filtered_test_case), list)
+        self.assertEqual(type(filtered_test_case[0]), spacy.tokens.token.Token)
+
+    def test_empty(self):
+
+        nlp = spacy.load("en_core_web_sm")
+        data = main.extract_training_text("sectraining.csv")
+        test_case = main.tokenize_text(nlp, data[0][0])
+        filtered_test_case = main.filter_tags(test_case)
+
+        if len(filtered_test_case) != 0:
+            result = False
+        else:
+            result = True
+
+        self.assertFalse(result)
 
 
 if __name__ == "__main__":
