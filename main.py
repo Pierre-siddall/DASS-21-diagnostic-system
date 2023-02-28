@@ -23,7 +23,24 @@ def make_bow(words):
     return bag
 
 
-#
+# Function 3
+def filter_tags(doc):
+    whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
+    new_doc = []
+
+    for token in doc:
+        if token.pos_ in whitelist:
+            new_doc.append(token)
+
+    return new_doc
+
+
+# Function 2
+def tokenize_text(tokenizer, text):
+    return tokenizer(text)
+
+
+# Function 1
 def extract_training_text(csvfile):
     training_text = []
     with open(csvfile, "r") as f:
@@ -40,4 +57,6 @@ def extract_training_text(csvfile):
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
-    extract_training_text("sectraining.csv")
+    nlp = spacy.load("en_core_web_sm")
+    test = extract_training_text("sectraining.csv")
+    doc = tokenize_text(nlp, test[0][0])
