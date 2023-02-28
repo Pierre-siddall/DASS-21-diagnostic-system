@@ -1,18 +1,16 @@
 import warnings
 import spacy
-from textblob import TextBlob
+from csv import reader
 
-warnings.filterwarnings("ignore")
 
-# Function 5
 def findSimilar(current):
     pass
 
-# Function 4
-def isNegative(word,negative):
+
+def isNegative(word, negative):
     pass
 
-# Function 3
+
 def make_bow(words):
     bag = {}
 
@@ -24,35 +22,22 @@ def make_bow(words):
 
     return bag
 
+
 #
-# Function 2
-def filter_tags(blob):
-    # TODO-Change to use spaCy
-    tags = blob.tags
-    accepted = ['JJ', 'JJR', 'JJS', 'NN', 'NNS', 'NNPS', 'RB', 'RBR', 'RBS', 'VB', 'VBD',
-                'VBG', 'VBN', 'VBP', 'VBZ']
+def extract_training_text(csvfile):
+    training_text = []
+    with open(csvfile, "r") as f:
+        file_reader = reader(f)
+        for i in file_reader:
+            if i[-1] == '1':
+                training_text.append(i)
 
-    filtered_tags = []
-    for word, tag in tags:
-        if tag in accepted:
-            filtered_tags.append((word, tag))
+    for text in training_text:
+        text.pop(-1)
 
-    return filtered_tags
-
-
-# Function 1
-def blob_file(textfile):
-    # TODO- potentially check to see if file format affects speed
-    # Done for a general file set
-    with open(textfile, "r") as f:
-        text = f.read()
-    blob_object = TextBlob(text)
-
-    return blob_object
+    return training_text
 
 
 if __name__ == '__main__':
-    my_blob = blob_file("Note.txt")
-    tags = filter_tags(my_blob)
-    print(tags)
-    testBag = make_bow(tags)
+    warnings.filterwarnings("ignore")
+    extract_training_text("sectraining.csv")
