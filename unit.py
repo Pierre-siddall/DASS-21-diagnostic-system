@@ -44,9 +44,6 @@ class TestFilterTags(unittest.TestCase):
         test_case = main.tokenize_text(nlp, data[0][0])
         filtered_test_case = main.filter_tags(test_case)
 
-        print(type(filtered_test_case))
-        print(type(filtered_test_case[0]))
-
         self.assertEqual(type(filtered_test_case), list)
         self.assertEqual(type(filtered_test_case[0]), spacy.tokens.token.Token)
 

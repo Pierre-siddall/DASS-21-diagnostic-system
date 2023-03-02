@@ -2,15 +2,6 @@ import warnings
 import spacy
 from csv import reader
 
-
-def findSimilar(current):
-    pass
-
-
-def isNegative(word, negative):
-    pass
-
-
 def make_bow(words):
     bag = {}
 
@@ -54,9 +45,37 @@ def extract_training_text(csvfile):
 
     return training_text
 
+#Function 4
+def get_ERT_emotions(csvfile):
+    data = []
+    with open(csvfile,"r") as f:
+        file_reader = reader(f)
+        for i in file_reader:
+            data.append(i)
+
+    considered=data[4:]
+    emotions = []
+
+    for record in considered:
+        record_emotions=[]
+        for value in record[27:77:5]:
+            record_emotions.append(value)
+        emotions.append(record_emotions)
+
+    for x in range(2):
+        for emotion_list in emotions:
+            if emotion_list[-1] == '':
+                emotions.pop(emotions.index(emotion_list))
+
+    return emotions
+
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
     test = extract_training_text("sectraining.csv")
     doc = tokenize_text(nlp, test[0][0])
+    new_doc=filter_tags(doc)
+    ERT= get_ERT_emotions("ERT_dataset.csv")
+    for emotion in ERT:
+        print(emotion)
