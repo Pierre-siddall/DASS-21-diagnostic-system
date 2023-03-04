@@ -2,8 +2,43 @@ import warnings
 import spacy
 from csv import reader
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords, wordnet
+from sklearn.neural_network import MLPRegressor
 
 
+# Function 9
+def get_max_similarity(sims):
+    max_score = -1
+    max_text = ''
+
+    for t, s in sims:
+        if s > max_score:
+            max_score = s
+            max_text = t
+
+    return max_score, max_text
+
+
+# Function 8
+def find_word_antonym(token):
+    antonyms = []
+    for syn in wordnet.synsets(token):
+        for lem in syn.lemmas():
+            if lem.antonyms():
+                antonyms.append(lem.antonyms()[0].name())
+
+    return antonyms[0]
+
+
+# Function 7
+def is_negated(token):
+    if token.dep_ == 'neg':
+        return True
+    elif token.dep_ != 'neg':
+        return False
+
+
+# Function 6
 def make_bow(words):
     bag = {}
 
@@ -16,8 +51,38 @@ def make_bow(words):
     return bag
 
 
+# Function 5
+def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
+    discovered_words = []
+
+    for token in doc:
+        base = nlp_model(token.text)
+        similarities = []
+        for emotion in lexicon:
+
+            comparison = nlp_model(emotion)
+            negated = is_negated(token)
+
+            if token.text not in stopwords:
+                if negated:
+                    new_comparison = nlp_model(find_word_antonym(comparison.text))
+                    sim_score = base.similarity(new_comparison)
+                    similarities.append((new_comparison.text, sim_score))
+                else:
+                    sim_score = base.similarity(comparison)
+                    similarities.append((comparison.text, sim_score))
+
+        score_max, text_max = get_max_similarity(similarities)
+
+        if score_max >= 0.5:
+            discovered_words.append(text_max)
+
+        print(discovered_words)
+
+
 # Function 3
 def filter_tags(doc):
+    # Cite for the whitelist
     whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
     new_doc = []
 
@@ -30,7 +95,7 @@ def filter_tags(doc):
 
 # Function 2
 def tokenize_text(tokenizer, text):
-    return tokenizer(text)
+    return tokenizer(text.lower())
 
 
 # Function 1
@@ -90,9 +155,12 @@ def generate_lexicon(emotions):
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
+    swords = stopwords.words('english')
+
     test = extract_training_text("sectraining.csv")
     doc = tokenize_text(nlp, test[0][0])
     new_doc = filter_tags(doc)
     ERT = get_ERT_emotions("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
+    discover_emotional_words(new_doc, lex, nlp, swords)
