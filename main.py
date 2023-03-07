@@ -1,7 +1,6 @@
 import warnings
 import spacy
 import json
-import numpy
 import math
 from csv import reader
 from nltk.stem import WordNetLemmatizer
@@ -9,6 +8,9 @@ from nltk.corpus import stopwords, wordnet
 
 
 # TODO - Make unit tests, for calculate doc vector and find word antonym
+
+
+################################  HELPER FUNCTIONS #################################################
 
 
 # Function 11
@@ -23,6 +25,63 @@ def make_bow(discoveries):
 
     return bow
 
+
+# Function 8
+def get_max_similarity(sims):
+    max_score = -1
+    max_text = ''
+
+    for t, s in sims:
+        if s > max_score:
+            max_score = s
+            max_text = t
+
+    return max_score, max_text
+
+
+# Function 7
+def find_word_antonym(token):
+    antonyms = []
+    for syn in wordnet.synsets(token):
+        for lem in syn.lemmas():
+            if lem.antonyms():
+                antonyms.append(lem.antonyms()[0].name())
+
+    if len(antonyms) == 0:
+        return
+    elif len(antonyms) > 0:
+        return antonyms[0]
+
+
+# Function 6
+def is_negated(token):
+    if token.dep_ == 'neg':
+        return True
+    elif token.dep_ != 'neg':
+        return False
+
+
+# Function 3
+def filter_tags(doc):
+    # Cite for the whitelist
+    whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
+    new_doc = []
+
+    for token in doc:
+        if token.pos_ in whitelist:
+            new_doc.append(token)
+
+    return new_doc
+
+
+# Function 2
+def tokenize_text(tokenizer, text):
+    return tokenizer(text.lower())
+
+
+######################################################################################################
+
+####################################### MAIN PROGRAM FUNCTIONS #######################################
 
 # Function 10
 def calculate_doc_vector(corpus, doc, lexicon, nlp_model, stopwords):
@@ -76,41 +135,6 @@ def get_corpus_frequency(corpus, lexicon, nlp_model, stopwords):
         f.close()
 
 
-# Function 8
-def get_max_similarity(sims):
-    max_score = -1
-    max_text = ''
-
-    for t, s in sims:
-        if s > max_score:
-            max_score = s
-            max_text = t
-
-    return max_score, max_text
-
-
-# Function 7
-def find_word_antonym(token):
-    antonyms = []
-    for syn in wordnet.synsets(token):
-        for lem in syn.lemmas():
-            if lem.antonyms():
-                antonyms.append(lem.antonyms()[0].name())
-
-    if len(antonyms) == 0:
-        return
-    elif len(antonyms) > 0:
-        return antonyms[0]
-
-
-# Function 6
-def is_negated(token):
-    if token.dep_ == 'neg':
-        return True
-    elif token.dep_ != 'neg':
-        return False
-
-
 # Function 5
 def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
     discovered_words = []
@@ -145,24 +169,6 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
     return discovered_words
 
 
-# Function 3
-def filter_tags(doc):
-    # Cite for the whitelist
-    whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
-    new_doc = []
-
-    for token in doc:
-        if token.pos_ in whitelist:
-            new_doc.append(token)
-
-    return new_doc
-
-
-# Function 2
-def tokenize_text(tokenizer, text):
-    return tokenizer(text.lower())
-
-
 # Function 1
 def extract_training_text(csvfile):
     training_text = []
@@ -175,7 +181,7 @@ def extract_training_text(csvfile):
     for text in training_text:
         text.pop(-1)
 
-    return training_text
+    return training_text[:1000]
 
 
 # Function 4
@@ -227,4 +233,4 @@ if __name__ == '__main__':
     ERT = get_ERT_emotions("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
-    discover_emotional_words(doc, lex, nlp, swords)
+    get_corpus_frequency(corpus, lex, nlp, swords)
