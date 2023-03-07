@@ -85,7 +85,7 @@ def generate_lexicon(emotions):
     wnl = WordNetLemmatizer()
 
     for emotion_record in emotions:
-        for emotion in emotion_record:
+        for emotion in emotion_record[:-2]:
             comparison_emotion = wnl.lemmatize(emotion.lower())
             if comparison_emotion not in lexicon:
                 lexicon.append(comparison_emotion)
@@ -240,20 +240,46 @@ def get_ERT_data(csvfile):
             data.append(i)
 
     considered = data[4:]
-    emotions = []
+    emotions_scores = []
 
+    # Adding emotions_scores and scores
     for record in considered:
-        record_emotions = []
-        for value in record[27:77:5]:
-            record_emotions.append(value)
-        emotions.append(record_emotions)
+        record_values = []
+        for emotion in record[27:77:5]:
+            record_values.append(emotion)
 
-    for x in range(2):
-        for emotion_list in emotions:
-            if emotion_list[-1] == '':
-                emotions.pop(emotions.index(emotion_list))
+        DASS_scores = record[153:174]
+        record_depression = []
+        record_anxiety = []
+        scoring_template = ["S", "A", "D", "A", "D", "S", "A", "S", "A", "D", "S", "S", "D", "S",
+                            "A", "D", "D", "S", "A", "A", "D"]
 
-    return emotions
+        # Adding DASS depression and anxiety scores
+        for index in range(len(DASS_scores)):
+            if scoring_template[index] == "A" and DASS_scores[index] != "46":
+                try:
+                    record_anxiety.append(int(DASS_scores[index]))
+                except:
+                    pass
+            elif scoring_template[index] == "D" and DASS_scores[index] != "46":
+                try:
+                    record_depression.append(int(DASS_scores[index]))
+                except:
+                    pass
+
+        record_values.append(sum(record_depression))
+        record_values.append(sum(record_anxiety))
+        emotions_scores.append(record_values)
+
+
+    # Cleaning redundant records
+    for x in range(4):
+        for emotion_list in emotions_scores:
+            if emotion_list[-1] == 0:
+                emotions_scores.pop(emotions_scores.index(emotion_list))
+
+    return emotions_scores
+
 
 
 if __name__ == '__main__':
@@ -266,5 +292,3 @@ if __name__ == '__main__':
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
-    for record in ERT:
-        print(record)
