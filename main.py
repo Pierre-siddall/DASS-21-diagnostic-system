@@ -79,12 +79,56 @@ def tokenize_text(tokenizer, text):
     return tokenizer(text.lower())
 
 
+def generate_lexicon(emotions):
+    # TODO - update this to reflect change to get_ERT_data function which adds scores
+    lexicon = []
+    wnl = WordNetLemmatizer()
+
+    for emotion_record in emotions:
+        for emotion in emotion_record:
+            comparison_emotion = wnl.lemmatize(emotion.lower())
+            if comparison_emotion not in lexicon:
+                lexicon.append(comparison_emotion)
+
+    return lexicon
+
+
 ######################################################################################################
 
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
+# Function 12
+def add_vector_target_output(ERT_data, doc_vector):
+    sorted_vector = sorted(doc_vector)
+    comparison_vector = sorted([t for v, t in sorted_vector[:10]])
+
+    highest_similarity = 0
+    highest_similarity_line = None
+
+    for line in ERT_data:
+
+        sorted_line = sorted(line[:10])
+        similarity = 0
+
+        for x in range(len(sorted_line)):
+            if sorted_line[x] == comparison_vector[x]:
+                similarity += 1
+
+        if similarity > highest_similarity:
+            highest_similarity = similarity
+            highest_similarity_line = line
+
+    depression_score = highest_similarity_line[-2]
+    anxiety_score = highest_similarity_line[-1]
+
+    new_doc_vector = [v for v, t in doc_vector]
+    new_doc_vector.append(depression_score)
+    new_doc_vector.append(anxiety_score)
+
+    return new_doc_vector
+
 
 # Function 10
-def calculate_doc_vector(corpus, doc, lexicon, nlp_model, stopwords):
+def calculate_doc_vector(ERT_data, corpus, doc, lexicon, nlp_model, stopwords):
     vector = []
 
     with open("corpus_frequency.txt", "r") as f:
@@ -107,9 +151,11 @@ def calculate_doc_vector(corpus, doc, lexicon, nlp_model, stopwords):
 
         tfidf_value = tf_value * idf_value
 
-        vector.append(tfidf_value)
+        vector.append((tfidf_value, key))
 
-    return vector
+    final_vector = add_vector_target_output(ERT_data, vector)
+
+    return final_vector
 
 
 # Function 9
@@ -185,7 +231,7 @@ def extract_training_text(csvfile):
 
 
 # Function 4
-def get_ERT_emotions(csvfile):
+def get_ERT_data(csvfile):
     # TODO- Maybe extract the scores too?
     data = []
     with open(csvfile, "r") as f:
@@ -210,19 +256,6 @@ def get_ERT_emotions(csvfile):
     return emotions
 
 
-def generate_lexicon(emotions):
-    lexicon = []
-    wnl = WordNetLemmatizer()
-
-    for emotion_record in emotions:
-        for emotion in emotion_record:
-            comparison_emotion = wnl.lemmatize(emotion.lower())
-            if comparison_emotion not in lexicon:
-                lexicon.append(comparison_emotion)
-
-    return lexicon
-
-
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
@@ -230,7 +263,8 @@ if __name__ == '__main__':
 
     corpus = extract_training_text("sectraining.csv")
     doc = tokenize_text(nlp, corpus[0][0])
-    ERT = get_ERT_emotions("ERT_dataset.csv")
+    ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
-    get_corpus_frequency(corpus, lex, nlp, swords)
+    for record in ERT:
+        print(record)
