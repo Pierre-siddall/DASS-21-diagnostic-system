@@ -5,6 +5,7 @@ import math
 from csv import reader
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords, wordnet
+from sklearn.neural_network import MLPRegressor
 
 
 # TODO - Make unit tests, for calculate doc vector and find word antonym
@@ -96,6 +97,25 @@ def generate_lexicon(emotions):
 ######################################################################################################
 
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
+# Function 13
+def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
+    training_data = []
+
+    print("Getting corpus frequencies\n")
+    frequencies = get_corpus_frequency(corpus, lexicon, nlp_model, stopwords)
+
+    with open("training_data.txt", "w") as f:
+        print("Getting document vectors\n")
+        for document in corpus:
+            document_vector = calculate_doc_vector(ERT_data, corpus, document, lexicon, nlp_model, stopwords,
+                                                   frequencies)
+            training_data.append(document_vector)
+            f.write(document_vector + "\n")
+        f.close()
+
+    return training_data
+
+
 # Function 12
 def add_vector_target_output(ERT_data, doc_vector):
     sorted_vector = sorted(doc_vector)
@@ -128,13 +148,8 @@ def add_vector_target_output(ERT_data, doc_vector):
 
 
 # Function 10
-def calculate_doc_vector(ERT_data, corpus, doc, lexicon, nlp_model, stopwords):
+def calculate_doc_vector(ERT_data, corpus, doc, lexicon, nlp_model, stopwords, corpus_frequency):
     vector = []
-
-    with open("corpus_frequency.txt", "r") as f:
-        text = f.read()
-        frequencies = json.load(text)
-        f.close()
 
     doc_discoveries = make_bow(discover_emotional_words(doc, lexicon, nlp_model, stopwords))
 
@@ -145,7 +160,7 @@ def calculate_doc_vector(ERT_data, corpus, doc, lexicon, nlp_model, stopwords):
         tf_value = tf_doc_term_freq / tf_doc_sum
 
         idf_num_docs = len(corpus)
-        idf_appearances = frequencies[key]
+        idf_appearances = corpus_frequency[key]
 
         idf_value = math.log(idf_num_docs / idf_appearances)
 
@@ -176,9 +191,7 @@ def get_corpus_frequency(corpus, lexicon, nlp_model, stopwords):
             elif word in all.keys():
                 all[word] += 1
 
-    with open("corpus_frequency.txt", "w") as f:
-        f.write(json.dumps(all))
-        f.close()
+    return all
 
 
 # Function 5
@@ -271,7 +284,6 @@ def get_ERT_data(csvfile):
         record_values.append(sum(record_anxiety))
         emotions_scores.append(record_values)
 
-
     # Cleaning redundant records
     for x in range(4):
         for emotion_list in emotions_scores:
@@ -281,14 +293,13 @@ def get_ERT_data(csvfile):
     return emotions_scores
 
 
-
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
     swords = stopwords.words('english')
 
     corpus = extract_training_text("sectraining.csv")
-    doc = tokenize_text(nlp, corpus[0][0])
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
+    training_set = create_training_set(corpus, ERT, lex, nlp, swords)
