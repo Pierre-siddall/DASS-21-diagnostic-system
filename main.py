@@ -101,16 +101,19 @@ def generate_lexicon(emotions):
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     training_data = []
 
-    print("Getting corpus frequencies\n")
-    frequencies = get_corpus_frequency(corpus, lexicon, nlp_model, stopwords)
+    print("Getting corpus data\n")
+    converted, frequencies = get_corpus_data(corpus, lexicon, nlp_model, stopwords)
 
-    with open("training_data.txt", "w") as f:
+    with open("training_data.txt", "w") as t:
+        t.close()
+
+    with open("training_data.txt", "a") as f:
         print("Getting document vectors\n")
-        for document in corpus:
-            document_vector = calculate_doc_vector(ERT_data, corpus, document, lexicon, nlp_model, stopwords,
-                                                   frequencies)
+        for document in converted:
+            document_vector = calculate_doc_vector(lexicon,ERT_data, corpus, document, frequencies)
+            document_vector_string = " ".join(str(x) for x in document_vector)
             training_data.append(document_vector)
-            f.write(document_vector + "\n")
+            f.write(document_vector_string + "\n")
         f.close()
 
     return training_data
@@ -129,8 +132,8 @@ def add_vector_target_output(ERT_data, doc_vector):
         sorted_line = sorted(line[:10])
         similarity = 0
 
-        for x in range(len(sorted_line)):
-            if sorted_line[x] == comparison_vector[x]:
+        for element in comparison_vector:
+            if element in sorted_line:
                 similarity += 1
 
         if similarity > highest_similarity:
@@ -148,34 +151,40 @@ def add_vector_target_output(ERT_data, doc_vector):
 
 
 # Function 10
-def calculate_doc_vector(ERT_data, corpus, doc, lexicon, nlp_model, stopwords, corpus_frequency):
+def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency):
     vector = []
 
-    doc_discoveries = make_bow(discover_emotional_words(doc, lexicon, nlp_model, stopwords))
+    doc_discoveries = make_bow(doc)
 
-    for key in doc_discoveries.keys():
-        tf_doc_term_freq = doc_discoveries[key]
-        tf_doc_sum = sum(doc_discoveries.values())
+    for emotion in lexicon:
+        if emotion in doc_discoveries.keys():
+            tf_doc_term_freq = doc_discoveries[emotion]
+            tf_doc_sum = sum(doc_discoveries.values())
 
-        tf_value = tf_doc_term_freq / tf_doc_sum
+            tf_value = tf_doc_term_freq / tf_doc_sum
 
-        idf_num_docs = len(corpus)
-        idf_appearances = corpus_frequency[key]
+            idf_num_docs = len(corpus)
+            idf_appearances = corpus_frequency[emotion]
 
-        idf_value = math.log(idf_num_docs / idf_appearances)
+            idf_value = math.log(idf_num_docs / idf_appearances)
 
-        tfidf_value = tf_value * idf_value
+            tfidf_value = tf_value * idf_value
 
-        vector.append((tfidf_value, key))
+            vector.append((tfidf_value, emotion))
+        else:
+            vector.append((0.0, emotion))
 
     final_vector = add_vector_target_output(ERT_data, vector)
+
+    print("The length of the final vector is", len(final_vector))
 
     return final_vector
 
 
 # Function 9
-def get_corpus_frequency(corpus, lexicon, nlp_model, stopwords):
+def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
     all = {}
+    converted_docs = []
     count = 1
 
     for text in corpus:
@@ -183,6 +192,7 @@ def get_corpus_frequency(corpus, lexicon, nlp_model, stopwords):
         count += 1
         token_text = tokenize_text(nlp_model, text[0])
         discover_words = discover_emotional_words(token_text, lexicon, nlp_model, stopwords)
+        converted_docs.append(discover_words)
         word_set = set(discover_words)
 
         for word in word_set:
@@ -191,7 +201,7 @@ def get_corpus_frequency(corpus, lexicon, nlp_model, stopwords):
             elif word in all.keys():
                 all[word] += 1
 
-    return all
+    return converted_docs, all
 
 
 # Function 5
@@ -240,7 +250,7 @@ def extract_training_text(csvfile):
     for text in training_text:
         text.pop(-1)
 
-    return training_text[:1000]
+    return training_text[:2]
 
 
 # Function 4
