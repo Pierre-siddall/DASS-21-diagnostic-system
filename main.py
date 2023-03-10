@@ -110,7 +110,7 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     with open("training_data.txt", "a") as f:
         print("Getting document vectors\n")
         for document in converted:
-            document_vector = calculate_doc_vector(lexicon,ERT_data, corpus, document, frequencies)
+            document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, document, frequencies)
             document_vector_string = " ".join(str(x) for x in document_vector)
             training_data.append(document_vector)
             f.write(document_vector_string + "\n")
@@ -132,13 +132,24 @@ def add_vector_target_output(ERT_data, doc_vector):
         sorted_line = sorted(line[:10])
         similarity = 0
 
-        for element in comparison_vector:
-            if element in sorted_line:
+        # first check
+        for x in range(len(comparison_vector)):
+            if comparison_vector[x] == sorted_line[x]:
                 similarity += 1
 
         if similarity > highest_similarity:
             highest_similarity = similarity
             highest_similarity_line = line
+
+        # Second check
+        if highest_similarity_line is None:
+            for element in comparison_vector:
+                if element in sorted_line:
+                    similarity += 1
+
+            if similarity > highest_similarity:
+                highest_similarity = similarity
+                highest_similarity_line = line
 
     depression_score = highest_similarity_line[-2]
     anxiety_score = highest_similarity_line[-1]
@@ -175,8 +186,6 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency):
             vector.append((0.0, emotion))
 
     final_vector = add_vector_target_output(ERT_data, vector)
-
-    print("The length of the final vector is", len(final_vector))
 
     return final_vector
 
@@ -250,7 +259,7 @@ def extract_training_text(csvfile):
     for text in training_text:
         text.pop(-1)
 
-    return training_text[:2]
+    return training_text[:1000]
 
 
 # Function 4
