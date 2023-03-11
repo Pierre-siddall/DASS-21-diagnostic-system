@@ -1,4 +1,6 @@
 import warnings
+
+import numpy as np
 import spacy
 import json
 import math
@@ -120,39 +122,37 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
 
 
 # Function 12
-def add_vector_target_output(ERT_data, doc_vector):
-    sorted_vector = sorted(doc_vector)
-    comparison_vector = sorted([t for v, t in sorted_vector[:10]])
+def add_vector_target_output(ERT_data, doc_vector, doc_bow):
+    doc_bow_list = []
+
+    for key, value in doc_bow.items():
+        doc_bow_list.append((value, key))
+
+    sorted_vector = sorted(doc_bow_list)
+    comparison_vector = np.array([t for v, t in sorted_vector[:-10:-1]])
 
     highest_similarity = 0
     highest_similarity_line = None
 
     for line in ERT_data:
 
-        sorted_line = sorted(line[:10])
+        sorted_line = np.array(sorted(line[:10]))
         similarity = 0
 
-        # first check
-        for x in range(len(comparison_vector)):
-            if comparison_vector[x] == sorted_line[x]:
+        for element in comparison_vector:
+            if element in sorted_line:
                 similarity += 1
 
         if similarity > highest_similarity:
             highest_similarity = similarity
             highest_similarity_line = line
 
-        # Second check
-        if highest_similarity_line is None:
-            for element in comparison_vector:
-                if element in sorted_line:
-                    similarity += 1
-
-            if similarity > highest_similarity:
-                highest_similarity = similarity
-                highest_similarity_line = line
-
-    depression_score = highest_similarity_line[-2]
-    anxiety_score = highest_similarity_line[-1]
+    if highest_similarity_line is not None:
+        depression_score = highest_similarity_line[-2]
+        anxiety_score = highest_similarity_line[-1]
+    else:
+        depression_score = -1
+        anxiety_score = -1
 
     new_doc_vector = [v for v, t in doc_vector]
     new_doc_vector.append(depression_score)
@@ -185,7 +185,7 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency):
         else:
             vector.append((0.0, emotion))
 
-    final_vector = add_vector_target_output(ERT_data, vector)
+    final_vector = add_vector_target_output(ERT_data, vector, doc_discoveries)
 
     return final_vector
 
@@ -253,18 +253,16 @@ def extract_training_text(csvfile):
     with open(csvfile, "r") as f:
         file_reader = reader(f)
         for i in file_reader:
-            if i[-1] == '1':
-                training_text.append(i)
+            training_text.append(i)
 
     for text in training_text:
         text.pop(-1)
 
-    return training_text[:1000]
+    return training_text[::2]
 
 
 # Function 4
 def get_ERT_data(csvfile):
-    # TODO- Maybe extract the scores too?
     data = []
     with open(csvfile, "r") as f:
         file_reader = reader(f)
