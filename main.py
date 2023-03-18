@@ -3,12 +3,13 @@ import warnings
 import numpy as np
 import pandas as pd
 import spacy
-import json
 import math
 from csv import reader
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords, wordnet
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 
 # TODO - Make unit tests, for calculate doc vector and find word antonym
@@ -16,19 +17,18 @@ from sklearn.neural_network import MLPRegressor
 
 ################################  HELPER FUNCTIONS #################################################
 
-#Function 14
+# Function 14
 def read_training_data(filename):
+    traininglines = []
 
-    traininglines=[]
-
-    with open(filename,"r") as f:
+    with open(filename, "r") as f:
         lines = f.read().splitlines()
         for line in lines:
             formattedline = line.split(' ')
             if formattedline[-1] == '-1':
                 pass
             else:
-                training_line_floats=[]
+                training_line_floats = []
                 for value in formattedline:
                     float_value = float(value)
                     training_line_floats.append(float_value)
@@ -36,7 +36,6 @@ def read_training_data(filename):
     f.close()
 
     return pd.DataFrame(traininglines)
-
 
 
 # Function 11
@@ -122,6 +121,21 @@ def generate_lexicon(emotions):
 ######################################################################################################
 
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
+
+# Function 15
+def train_MLP_regressor(dataframe, training_size):
+    X = dataframe.loc[:, 0:210]
+    y = dataframe.loc[:, 211:212]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=training_size, random_state=1)
+
+    # Scales the x axis data
+    scaled_X = StandardScaler()
+    X_training_scaled = scaled_X.fit_transform(X_train)
+    X_testing_scaled = scaled_X.fit_transform(X_test)
+
+    regr = MLPRegressor(random_state=1, max_iter=10000).fit(X_training_scaled, y_train)
+
+
 # Function 13
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     training_data = []
@@ -343,6 +357,4 @@ if __name__ == '__main__':
     lex = generate_lexicon(ERT)
 
     training_lines = read_training_data("training_data.txt")
-    print(training_lines)
-
-
+    train_MLP_regressor(training_lines, 0.7)
