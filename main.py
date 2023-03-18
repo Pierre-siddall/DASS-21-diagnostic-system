@@ -123,7 +123,7 @@ def generate_lexicon(emotions):
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
 
 # Function 15
-def train_MLP_regressor(dataframe, training_size):
+def train_test_MLP_regressor(dataframe, training_size):
     X = dataframe.loc[:, 0:210]
     y = dataframe.loc[:, 211:212]
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=training_size, random_state=1)
