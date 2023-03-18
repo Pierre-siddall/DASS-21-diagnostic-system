@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+import pandas as pd
 import spacy
 import json
 import math
@@ -14,6 +15,28 @@ from sklearn.neural_network import MLPRegressor
 
 
 ################################  HELPER FUNCTIONS #################################################
+
+#Function 14
+def read_training_data(filename):
+
+    traininglines=[]
+
+    with open(filename,"r") as f:
+        lines = f.read().splitlines()
+        for line in lines:
+            formattedline = line.split(' ')
+            if formattedline[-1] == '-1':
+                pass
+            else:
+                training_line_floats=[]
+                for value in formattedline:
+                    float_value = float(value)
+                    training_line_floats.append(float_value)
+                traininglines.append(training_line_floats)
+    f.close()
+
+    return pd.DataFrame(traininglines)
+
 
 
 # Function 11
@@ -319,4 +342,7 @@ if __name__ == '__main__':
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
-    training_set = create_training_set(corpus, ERT, lex, nlp, swords)
+    training_lines = read_training_data("training_data.txt")
+    print(training_lines)
+
+
