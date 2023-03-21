@@ -109,7 +109,6 @@ def tokenize_text(tokenizer, text):
 
 
 def generate_lexicon(emotions):
-    # TODO - update this to reflect change to get_ERT_data function which adds scores
     lexicon = []
     wnl = WordNetLemmatizer()
 
@@ -263,7 +262,7 @@ def add_vector_target_output(ERT_data, doc_vector, doc_bow):
 
 
 # Function 10
-def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency):
+def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency,add_output=True):
     vector = []
 
     doc_discoveries = make_bow(doc)
@@ -286,9 +285,11 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency):
         else:
             vector.append((0.0, emotion))
 
-    final_vector = add_vector_target_output(ERT_data, vector, doc_discoveries)
-
-    return final_vector
+    if add_output:
+        final_vector = add_vector_target_output(ERT_data, vector, doc_discoveries)
+        return final_vector
+    else:
+        return vector
 
 
 # Function 9
