@@ -8,7 +8,7 @@ from csv import reader
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords, wordnet
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 
 
@@ -28,11 +28,15 @@ def read_training_data(filename):
             if formattedline[-1] == '-1':
                 pass
             else:
-                training_line_floats = []
+                training_line_values = []
                 for value in formattedline:
-                    float_value = float(value)
-                    training_line_floats.append(float_value)
-                traininglines.append(training_line_floats)
+                    if len(value) == 1 or len(value) == 2:
+                        int_value = int(value)
+                        training_line_values.append(int_value)
+                    else:
+                        float_value = float(value)
+                        training_line_values.append(float_value)
+                traininglines.append(training_line_values)
     f.close()
 
     return pd.DataFrame(traininglines)
@@ -118,22 +122,82 @@ def generate_lexicon(emotions):
     return lexicon
 
 
+# Function 16
+def select_optimal_MLP_model(X_train, y_train):
+    parameters = {
+        "hidden_layer_sizes": [(100, 100, 100), (150, 150, 150), (200, 200, 200)],
+        "activation": ["identity", "logistic", "tanh", "relu"], "solver": ["lbfgs", "sgd", "adam"],
+        "learning_rate": ["constant", "invscaling", "adaptive"], "alpha": [0.0001, 0.0005, 0.001, 0.005],
+        }
+
+    clf = GridSearchCV(estimator=MLPRegressor(max_iter=10000), param_grid=parameters, cv=4, scoring="r2", n_jobs=10)
+    clf.fit(X_train, y_train)
+
+    return clf.best_params_
+
+
 ######################################################################################################
 
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
 
 # Function 15
-def train_test_MLP_regressor(dataframe, training_size):
+def train_MLP_regressor(dataframe, training_size,optimise=False):
+    # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
-    y = dataframe.loc[:, 211:212]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=training_size, random_state=1)
+    y_depression = dataframe.loc[:, 211]
+    y_anxiety = dataframe.loc[:, 212]
+
+    X_train_d, X_test_d, y_train_d, y_test_d = train_test_split(X, y_depression, train_size=training_size)
+    X_train_a, X_test_a, y_train_a, y_test_a = train_test_split(X, y_anxiety, train_size=training_size)
 
     # Scales the x axis data
     scaled_X = StandardScaler()
-    X_training_scaled = scaled_X.fit_transform(X_train)
-    X_testing_scaled = scaled_X.fit_transform(X_test)
+    X_training_scaled_d = scaled_X.fit_transform(X_train_d)
+    X_testing_scaled_d = scaled_X.fit_transform(X_test_d)
 
-    regr = MLPRegressor(random_state=1, max_iter=10000).fit(X_training_scaled, y_train)
+    X_training_scaled_a = scaled_X.fit_transform(X_train_a)
+    X_testing_scaled_a = scaled_X.fit_transform(X_test_a)
+
+    # Getting the optimal hyperparameters for the MLP
+    if optimise:
+        print("Getting optimised parameters for depression model")
+        op_depression = select_optimal_MLP_model(X_training_scaled_d, y_train_d)
+        print("Getting optimised parameters for anxiety model")
+        op_anxiety = select_optimal_MLP_model(X_training_scaled_a, y_train_a)
+        regr_d = MLPRegressor(activation=op_depression["activation"],
+                             alpha=op_depression["alpha"],
+                             hidden_layer_sizes=op_depression["hidden_layer_sizes"],
+                             learning_rate=op_depression["learning_rate"],
+                             solver=op_anxiety["solver"],
+                             max_iter=10000).fit(X_training_scaled_d, y_train_d)
+
+        regr_a = MLPRegressor(activation=op_anxiety["activation"],
+                            alpha=op_anxiety["alpha"],
+                            hidden_layer_sizes=op_anxiety["hidden_layer_sizes"],
+                            learning_rate=op_anxiety["learning_rate"],
+                            solver=op_anxiety["solver"],
+                            max_iter=10000).fit(X_training_scaled_a,y_train_a)
+    else:
+        regr_d = MLPRegressor(activation="identity",
+                             alpha=0.001,
+                             hidden_layer_sizes=(100,100,100),
+                             learning_rate="adaptive",
+                             solver="sgd",
+                             max_iter=10000).fit(X_training_scaled_d, y_train_d)
+
+        regr_a = MLPRegressor(activation="identity",
+                            alpha=0.0001,
+                            hidden_layer_sizes=(150,150,150),
+                            learning_rate="invscaling",
+                            solver="sgd",
+                            max_iter=10000).fit(X_training_scaled_a,y_train_a)
+
+
+    regr_d.predict(X_testing_scaled_d)
+    regr_a.predict(X_testing_scaled_a)
+
+    print("The R squared score for the depression regressor is ", regr_d.score(X_testing_scaled_d, y_test_d))
+    print("The R squared score for the anxiety regressor is ", regr_a.score(X_testing_scaled_a, y_test_a))
 
 
 # Function 13
@@ -357,4 +421,5 @@ if __name__ == '__main__':
     lex = generate_lexicon(ERT)
 
     training_lines = read_training_data("training_data.txt")
+    training_splits = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_MLP_regressor(training_lines, 0.7)
