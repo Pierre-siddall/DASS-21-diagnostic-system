@@ -11,9 +11,6 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 
 
-# TODO - Make unit tests, for calculate doc vector and find word antonym
-
-
 ################################  HELPER FUNCTIONS #################################################
 
 # Function 14
@@ -134,12 +131,44 @@ def select_optimal_MLP_model(X_train, y_train):
     return clf.best_params_
 
 
-######################################################################################################
-
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
+def generate_dass_severity(depression_score,anxiety_score):
 
-# Function 15
-def train_MLP_regressor(dataframe, training_size, optimise=False):
+    if 0 <= depression_score <= 9:
+        depression_level = "Normal"
+    elif 10<= depression_score <= 13:
+        depression_level = "Mild"
+    elif 14 <= depression_score <= 20:
+        depression_level = "Moderate"
+    elif 21 <= depression_score <= 27:
+        depression_level = "Severe"
+    elif 28 <= depression_score:
+        depression_level = " Extremely severe"
+
+    if 0<= anxiety_score <= 7:
+        anxiety_level = "Normal"
+    elif 8 <= anxiety_score <= 9:
+        anxiety_level = "Mild"
+    elif 10 <= anxiety_score <= 14:
+        anxiety_level = "Moderate"
+    elif 15 <= anxiety_score <= 19:
+        anxiety_level = "severe"
+    elif 20 <= anxiety_score:
+        anxiety_level = "Extremely severe"
+
+    return depression_level,anxiety_level
+
+
+def validate_documents(labelled_corpus,training_data):
+
+    depression_confirmed_proportions = {"Normal":0,"Mild":0,"Moderate":0,"Severe":0,"Extremely severe":0}
+    anxiety_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
+    depression_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
+    anxiety_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
+
+
+
+def validate_MLP_regressor(dataframe, training_size, optimise=False):
     # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
@@ -219,7 +248,6 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     return training_data
 
 
-# Function 12
 def add_vector_target_output(ERT_data, doc_vector, doc_bow):
     doc_bow_list = []
 
@@ -259,7 +287,6 @@ def add_vector_target_output(ERT_data, doc_vector, doc_bow):
     return new_doc_vector
 
 
-# Function 10
 def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_output=True):
     vector = []
 
@@ -290,7 +317,6 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_o
         return vector
 
 
-# Function 9
 def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
     all = {}
     converted_docs = []
@@ -313,7 +339,6 @@ def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
     return converted_docs, all
 
 
-# Function 5
 def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
     discovered_words = []
 
@@ -347,21 +372,21 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
     return discovered_words
 
 
-# Function 1
 def extract_training_text(csvfile):
+    training_text_labeled = []
     training_text = []
     with open(csvfile, "r") as f:
         file_reader = reader(f)
         for i in file_reader:
+            training_text_labeled(i)
             training_text.append(i)
 
     for text in training_text:
         text.pop(-1)
 
-    return training_text[::2]
+    return training_text_labeled[::2],training_text[::2]
 
 
-# Function 4
 def get_ERT_data(csvfile):
     data = []
     with open(csvfile, "r") as f:
@@ -414,7 +439,7 @@ def main():
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
     swords = stopwords.words('english')
-    corpus = extract_training_text("sectraining.csv")
+    corpus_labelled,corpus = extract_training_text("sectraining.csv")
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
@@ -430,7 +455,9 @@ def main():
         choice = int(input("Please enter a choice between 1 and 3: "))
 
     if choice == 1:
-        pass
+        print("Here are the validation scores\n")
+        validate_documents()
+        validate_MLP_regressor()
     elif choice == 2:
         pass
     elif choice == 3:
@@ -442,9 +469,9 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
     swords = stopwords.words('english')
-    corpus = extract_training_text("sectraining.csv")
+    corpus_labelled,corpus = extract_training_text("sectraining.csv")
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
     training_lines = read_training_data("training_data.txt")
-    train_MLP_regressor(training_lines, 0.7)
+    validate_MLP_regressor(training_lines, 0.7)
