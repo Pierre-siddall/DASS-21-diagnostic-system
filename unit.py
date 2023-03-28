@@ -1,6 +1,9 @@
 import main
+import warnings
 import unittest
 import spacy
+import time
+from nltk.corpus import stopwords, wordnet
 
 
 class TestTextExtraction(unittest.TestCase):
@@ -60,6 +63,41 @@ class TestFilterTags(unittest.TestCase):
             result = True
 
         self.assertFalse(result)
+
+
+class TestDiscoverEmotionalWords(unittest.TestCase):
+
+    def test_speed(self):
+        warnings.filterwarnings("ignore")
+        nlp = spacy.load("en_core_web_sm")
+        swords = stopwords.words('english')
+        corpus = main.extract_training_text("sectraining.csv")
+        ERT = main.get_ERT_data("ERT_dataset.csv")
+        lex = main.generate_lexicon(ERT)
+
+        greater_docs = len(corpus[1][0]) > len(corpus[350][0])
+        self.assertTrue(greater_docs)
+
+        start_1 = time.time()
+
+        main.discover_emotional_words(nlp(corpus[1][0]), lex, nlp, swords)
+
+        end_1 = time.time()
+
+        speed_doc_1 = end_1 - start_1
+
+        start_2 = time.time()
+
+        main.discover_emotional_words(nlp(corpus[350][0]), lex, nlp, swords)
+
+        end_2 = time.time()
+
+        speed_doc_2 = end_2 - start_2
+
+        print("Speed for larger document 1 is",speed_doc_1)
+        print("Speed for smaller document 2 is", speed_doc_2)
+
+        self.assertGreater(speed_doc_1,speed_doc_2)
 
 
 if __name__ == "__main__":

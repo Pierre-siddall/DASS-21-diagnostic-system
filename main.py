@@ -1,5 +1,4 @@
 import warnings
-
 import numpy as np
 import pandas as pd
 import spacy
@@ -127,7 +126,7 @@ def select_optimal_MLP_model(X_train, y_train):
         "hidden_layer_sizes": [(100, 100, 100), (150, 150, 150), (200, 200, 200)],
         "activation": ["identity", "logistic", "tanh", "relu"], "solver": ["lbfgs", "sgd", "adam"],
         "learning_rate": ["constant", "invscaling", "adaptive"], "alpha": [0.0001, 0.0005, 0.001, 0.005],
-        }
+    }
 
     clf = GridSearchCV(estimator=MLPRegressor(max_iter=10000), param_grid=parameters, cv=4, scoring="r2", n_jobs=10)
     clf.fit(X_train, y_train)
@@ -140,7 +139,7 @@ def select_optimal_MLP_model(X_train, y_train):
 ####################################### MAIN PROGRAM FUNCTIONS #######################################
 
 # Function 15
-def train_MLP_regressor(dataframe, training_size,optimise=False):
+def train_MLP_regressor(dataframe, training_size, optimise=False):
     # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
@@ -164,33 +163,32 @@ def train_MLP_regressor(dataframe, training_size,optimise=False):
         print("Getting optimised parameters for anxiety model")
         op_anxiety = select_optimal_MLP_model(X_training_scaled_a, y_train_a)
         regr_d = MLPRegressor(activation=op_depression["activation"],
-                             alpha=op_depression["alpha"],
-                             hidden_layer_sizes=op_depression["hidden_layer_sizes"],
-                             learning_rate=op_depression["learning_rate"],
-                             solver=op_anxiety["solver"],
-                             max_iter=10000).fit(X_training_scaled_d, y_train_d)
+                              alpha=op_depression["alpha"],
+                              hidden_layer_sizes=op_depression["hidden_layer_sizes"],
+                              learning_rate=op_depression["learning_rate"],
+                              solver=op_anxiety["solver"],
+                              max_iter=10000).fit(X_training_scaled_d, y_train_d)
 
         regr_a = MLPRegressor(activation=op_anxiety["activation"],
-                            alpha=op_anxiety["alpha"],
-                            hidden_layer_sizes=op_anxiety["hidden_layer_sizes"],
-                            learning_rate=op_anxiety["learning_rate"],
-                            solver=op_anxiety["solver"],
-                            max_iter=10000).fit(X_training_scaled_a,y_train_a)
+                              alpha=op_anxiety["alpha"],
+                              hidden_layer_sizes=op_anxiety["hidden_layer_sizes"],
+                              learning_rate=op_anxiety["learning_rate"],
+                              solver=op_anxiety["solver"],
+                              max_iter=10000).fit(X_training_scaled_a, y_train_a)
     else:
         regr_d = MLPRegressor(activation="identity",
-                             alpha=0.001,
-                             hidden_layer_sizes=(100,100,100),
-                             learning_rate="adaptive",
-                             solver="sgd",
-                             max_iter=10000).fit(X_training_scaled_d, y_train_d)
+                              alpha=0.001,
+                              hidden_layer_sizes=(100, 100, 100),
+                              learning_rate="adaptive",
+                              solver="sgd",
+                              max_iter=10000).fit(X_training_scaled_d, y_train_d)
 
         regr_a = MLPRegressor(activation="identity",
-                            alpha=0.0001,
-                            hidden_layer_sizes=(150,150,150),
-                            learning_rate="invscaling",
-                            solver="sgd",
-                            max_iter=10000).fit(X_training_scaled_a,y_train_a)
-
+                              alpha=0.0001,
+                              hidden_layer_sizes=(150, 150, 150),
+                              learning_rate="invscaling",
+                              solver="sgd",
+                              max_iter=10000).fit(X_training_scaled_a, y_train_a)
 
     regr_d.predict(X_testing_scaled_d)
     regr_a.predict(X_testing_scaled_a)
@@ -204,14 +202,14 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     training_data = []
 
     print("Getting corpus data\n")
-    converted, frequencies = get_corpus_data(corpus, lexicon, nlp_model, stopwords)
+    tokenized, frequencies = get_corpus_data(corpus, lexicon, nlp_model, stopwords)
 
     with open("training_data.txt", "w") as t:
         t.close()
 
     with open("training_data.txt", "a") as f:
         print("Getting document vectors\n")
-        for document in converted:
+        for document in tokenized:
             document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, document, frequencies)
             document_vector_string = " ".join(str(x) for x in document_vector)
             training_data.append(document_vector)
@@ -262,7 +260,7 @@ def add_vector_target_output(ERT_data, doc_vector, doc_bow):
 
 
 # Function 10
-def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency,add_output=True):
+def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_output=True):
     vector = []
 
     doc_discoveries = make_bow(doc)
@@ -412,15 +410,41 @@ def get_ERT_data(csvfile):
     return emotions_scores
 
 
-if __name__ == '__main__':
+def main():
     warnings.filterwarnings("ignore")
     nlp = spacy.load("en_core_web_sm")
     swords = stopwords.words('english')
+    corpus = extract_training_text("sectraining.csv")
+    ERT = get_ERT_data("ERT_dataset.csv")
+    lex = generate_lexicon(ERT)
 
+    print("Welcome to the DASS-21 diagnostic system for authors of text\n")
+    print("The options are:\n")
+    print("(1) Validate\n")
+    print("(2) Diagnose\n")
+    print("(3) Exit\n")
+
+    choice = int(input("Please enter a choice: "))
+
+    while 0 > choice > 3 and type(choice) != int:
+        choice = int(input("Please enter a choice between 1 and 3: "))
+
+    if choice == 1:
+        pass
+    elif choice == 2:
+        pass
+    elif choice == 3:
+        exit()
+
+
+if __name__ == '__main__':
+    # Setup
+    warnings.filterwarnings("ignore")
+    nlp = spacy.load("en_core_web_sm")
+    swords = stopwords.words('english')
     corpus = extract_training_text("sectraining.csv")
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
 
     training_lines = read_training_data("training_data.txt")
-    training_splits = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_MLP_regressor(training_lines, 0.7)
