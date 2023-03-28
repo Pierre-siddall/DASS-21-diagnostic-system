@@ -1,3 +1,4 @@
+import json
 import warnings
 import numpy as np
 import pandas as pd
@@ -154,6 +155,7 @@ def generate_dass_severity(depression_score, anxiety_score):
 
 def diagnose_document(filename, corpus, corpus_frequency, stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
+
     with open(filename, "r") as f:
         document_text = f.read()
     f.close()
@@ -300,7 +302,6 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
     print("The R squared score for the anxiety regressor is ", regr_a.score(X_testing_scaled_a, y_test_a))
 
 
-# Function 13
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     training_data = []
 
@@ -410,6 +411,11 @@ def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
             elif word in all.keys():
                 all[word] += 1
 
+    with open("frequencies.json","w") as f:
+        json.dump(all,f)
+    f.close()
+
+
     return converted_docs, all
 
 
@@ -452,7 +458,7 @@ def extract_training_text(csvfile):
     with open(csvfile, "r") as f:
         file_reader = reader(f)
         for i in file_reader:
-            training_text_labeled(i)
+            training_text_labeled.append(i)
             training_text.append(i)
 
     for text in training_text:
@@ -545,7 +551,8 @@ def main():
     elif choice == 2:
         try:
             file = str(input("Please enter the path of a file: "))
-            diagnose_document(file, corpus, frequencies, swords, ERT, lex, nlp, training_lines, 0.7)
+            d,a=diagnose_document(file, corpus, frequencies, swords, ERT, lex, nlp, training_lines, 0.7)
+            print(f"The author of this document is predicted to have {d} depression and {a} anxiety")
         except TypeError:
             print("You gave an invalid file path")
     elif choice == 3:
@@ -553,13 +560,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # Setup
-    warnings.filterwarnings("ignore")
-    nlp = spacy.load("en_core_web_sm")
-    swords = stopwords.words('english')
-    corpus_labelled, corpus = extract_training_text("sectraining.csv")
-    ERT = get_ERT_data("ERT_dataset.csv")
-    lex = generate_lexicon(ERT)
-
-    training_lines = read_training_data("training_data.txt")
-    validate_MLP_regressor(training_lines, 0.7)
+    main()
