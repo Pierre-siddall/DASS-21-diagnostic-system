@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 ################################  HELPER FUNCTIONS #################################################
 
-# Function 14
+
 def read_training_data(filename):
     traininglines = []
 
@@ -38,7 +38,6 @@ def read_training_data(filename):
     return pd.DataFrame(traininglines)
 
 
-# Function 11
 def make_bow(discoveries):
     bow = {}
 
@@ -64,7 +63,6 @@ def get_max_similarity(sims):
     return max_score, max_text
 
 
-# Function 7
 def find_word_antonym(token):
     antonyms = []
     for syn in wordnet.synsets(token):
@@ -78,7 +76,6 @@ def find_word_antonym(token):
         return antonyms[0]
 
 
-# Function 6
 def is_negated(token):
     if token.dep_ == 'neg':
         return True
@@ -86,7 +83,6 @@ def is_negated(token):
         return False
 
 
-# Function 3
 def filter_tags(doc):
     # Cite for the whitelist
     whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
@@ -99,7 +95,6 @@ def filter_tags(doc):
     return new_doc
 
 
-# Function 2
 def tokenize_text(tokenizer, text):
     return tokenizer(text.lower())
 
@@ -117,7 +112,6 @@ def generate_lexicon(emotions):
     return lexicon
 
 
-# Function 16
 def select_optimal_MLP_model(X_train, y_train):
     parameters = {
         "hidden_layer_sizes": [(100, 100, 100), (150, 150, 150), (200, 200, 200)],
@@ -156,6 +150,53 @@ def generate_dass_severity(depression_score, anxiety_score):
         anxiety_level = "Extremely severe"
 
     return depression_level, anxiety_level
+
+
+def diagnose_document(filename, corpus, corpus_frequency, stopwords, ERT_data, lexicon, nlp_model, dataframe,
+                      training_size):
+
+    with open(filename,"r") as f:
+        document_text = f.read()
+    f.close()
+
+    tokenized_doc = tokenize_text(nlp_model, document_text)
+    emotion_doc = discover_emotional_words(tokenized_doc, lexicon, nlp_model, stopwords)
+    document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, emotion_doc, corpus_frequency,add_output=False)
+
+    X = dataframe.loc[:, 0:210]
+    y_depression = dataframe.loc[:, 211]
+    y_anxiety = dataframe.loc[:, 212]
+
+    X_train_d, X_test_d, y_train_d, y_test_d = train_test_split(X, y_depression, train_size=training_size)
+    X_train_a, X_test_a, y_train_a, y_test_a = train_test_split(X, y_anxiety, train_size=training_size)
+
+    # Scales the x axis data
+    scaled_X = StandardScaler()
+    X_training_scaled_d = scaled_X.fit_transform(X_train_d)
+    X_training_scaled_a = scaled_X.fit_transform(X_train_a)
+
+    regr_d = MLPRegressor(activation="identity",
+                          alpha=0.001,
+                          hidden_layer_sizes=(100, 100, 100),
+                          learning_rate="adaptive",
+                          solver="sgd",
+                          max_iter=10000).fit(X_training_scaled_d, y_train_d)
+
+    regr_a = MLPRegressor(activation="identity",
+                          alpha=0.0001,
+                          hidden_layer_sizes=(150, 150, 150),
+                          learning_rate="invscaling",
+                          solver="sgd",
+                          max_iter=10000).fit(X_training_scaled_a, y_train_a)
+
+    depression_score = regr_d.predict(document_vector)
+    anxiety_score = regr_a.predict(document_vector)
+
+    d_severity,a_severity = generate_dass_severity(depression_score,anxiety_score)
+
+    return d_severity,a_severity
+
+
 
 
 def validate_documents(labelled_corpus, training_data):
@@ -478,6 +519,7 @@ def main():
     corpus_labelled, corpus = extract_training_text("sectraining.csv")
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
+    training_lines = read_training_data("training_data.txt")
 
     print("Welcome to the DASS-21 diagnostic system for authors of text\n")
     print("The options are:\n")
@@ -492,8 +534,16 @@ def main():
 
     if choice == 1:
         print("Here are the validation scores\n")
-        validate_documents()
-        validate_MLP_regressor()
+        dcp, acp, dnp, anp = validate_documents(corpus_labelled, training_lines)
+        print(f"The training data which was confirmed to be depressed had {dcp} % of it's depression scores above the "
+              f"threshold")
+        print(f"The training data which was confirmed to be depressed had {acp} % of it's anxiety scores above the "
+              f"threshold")
+        print(f"The training data which was not confirmed to be depressed had {dnp} % of it's depression scores above "
+              f"the threshold")
+        print(f"The training data which was not confirmed to be depressed had {anp} % of it's anxiety scores above "
+              f"the threshold")
+        validate_MLP_regressor(training_lines, 0.7)
     elif choice == 2:
         pass
     elif choice == 3:
