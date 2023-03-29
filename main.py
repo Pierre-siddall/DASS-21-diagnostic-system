@@ -153,8 +153,12 @@ def generate_dass_severity(depression_score, anxiety_score):
     return depression_level, anxiety_level
 
 
-def diagnose_document(filename, corpus, corpus_frequency, stopwords, ERT_data, lexicon, nlp_model, dataframe,
+def diagnose_document(filename, corpus,stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
+
+    with open("frequencies.json","r") as d:
+        freq = json.load(d)
+    d.close()
 
     with open(filename, "r") as f:
         document_text = f.read()
@@ -162,7 +166,7 @@ def diagnose_document(filename, corpus, corpus_frequency, stopwords, ERT_data, l
 
     tokenized_doc = tokenize_text(nlp_model, document_text)
     emotion_doc = discover_emotional_words(tokenized_doc, lexicon, nlp_model, stopwords)
-    document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, emotion_doc, corpus_frequency, add_output=False)
+    document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, emotion_doc, freq, add_output=False)
 
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
@@ -522,7 +526,6 @@ def main():
     corpus_labelled, corpus = extract_training_text("sectraining.csv")
     ERT = get_ERT_data("ERT_dataset.csv")
     lex = generate_lexicon(ERT)
-    converted, frequencies = get_corpus_data(corpus, lex, nlp, swords)
     training_lines = read_training_data("training_data.txt")
 
     print("Welcome to the DASS-21 diagnostic system for authors of text\n")
@@ -551,7 +554,7 @@ def main():
     elif choice == 2:
         try:
             file = str(input("Please enter the path of a file: "))
-            d,a=diagnose_document(file, corpus, frequencies, swords, ERT, lex, nlp, training_lines, 0.7)
+            d,a=diagnose_document(file, corpus,swords, ERT, lex, nlp, training_lines, 0.7)
             print(f"The author of this document is predicted to have {d} depression and {a} anxiety")
         except TypeError:
             print("You gave an invalid file path")
