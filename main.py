@@ -146,17 +146,16 @@ def generate_dass_severity(depression_score, anxiety_score):
     elif 10 <= anxiety_score <= 14:
         anxiety_level = "Moderate"
     elif 15 <= anxiety_score <= 19:
-        anxiety_level = "severe"
+        anxiety_level = "Severe"
     elif 20 <= anxiety_score:
         anxiety_level = "Extremely severe"
 
     return depression_level, anxiety_level
 
 
-def diagnose_document(filename, corpus,stopwords, ERT_data, lexicon, nlp_model, dataframe,
+def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
-
-    with open("frequencies.json","r") as d:
+    with open("frequencies.json", "r") as d:
         freq = json.load(d)
     d.close()
 
@@ -203,46 +202,50 @@ def diagnose_document(filename, corpus,stopwords, ERT_data, lexicon, nlp_model, 
 
 
 def validate_documents(labelled_corpus, training_data):
+
     depression_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     anxiety_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     depression_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     anxiety_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
 
-    for x in range(len(labelled_corpus)):
-        if labelled_corpus[x][-1] == 1:
-
-            depression_score = training_data[x][-2]
-            anxiety_score = training_data[x][-1]
+    for x in range(len(training_data)):
+        if labelled_corpus[x][-1] == "1":
+            depression_score = training_data.iloc[x][211]
+            anxiety_score = training_data.iloc[x][212]
             d_class, a_class = generate_dass_severity(depression_score, anxiety_score)
             depression_confirmed_proportions[d_class] += 1
             anxiety_confirmed_proportions[a_class] += 1
 
-        elif labelled_corpus[x][-1] == 0:
-            depression_score = training_data[x][-2]
-            anxiety_score = training_data[x][-1]
+        elif labelled_corpus[x][-1] == "0":
+            depression_score = training_data.iloc[x][211]
+            anxiety_score = training_data.iloc[x][212]
             d_class, a_class = generate_dass_severity(depression_score, anxiety_score)
             depression_none_proportions[d_class] += 1
             anxiety_none_proportions[a_class] += 1
 
-    depression_confirmed_percentage = depression_confirmed_proportions["Moderate"] + \
-                                      depression_confirmed_proportions["Severe"] + \
-                                      depression_confirmed_proportions["Extremely severe"] \
-                                      / sum(depression_confirmed_proportions.values())
+    dcm = depression_confirmed_proportions["Moderate"]
+    dcs = depression_confirmed_proportions["Severe"]
+    dce = depression_confirmed_proportions["Extremely severe"]
 
-    anxiety_confirmed_percentage = anxiety_confirmed_proportions["Moderate"] + \
-                                   anxiety_confirmed_proportions["Severe"] + \
-                                   anxiety_confirmed_proportions["Extremely severe"] \
-                                   / sum(anxiety_confirmed_proportions.values())
+    acm = anxiety_confirmed_proportions["Moderate"]
+    acs = anxiety_confirmed_proportions["Severe"]
+    ace = anxiety_confirmed_proportions["Extremely severe"]
 
-    depression_none_percentage = depression_none_proportions["Moderate"] + \
-                                 depression_none_proportions["Severe"] + \
-                                 depression_none_proportions["Extremely severe"] \
-                                 / sum(depression_none_proportions.values())
+    dnm = depression_none_proportions["Moderate"]
+    dns = depression_none_proportions["Severe"]
+    dne = depression_none_proportions["Extremely severe"]
 
-    anxiety_none_percentage = anxiety_none_proportions["Moderate"] + \
-                              anxiety_none_proportions["Severe"] + \
-                              anxiety_none_proportions["Extremely severe"] \
-                              / sum(anxiety_none_proportions.values())
+    anm = anxiety_none_proportions["Moderate"]
+    ans = anxiety_none_proportions["Severe"]
+    ane = anxiety_none_proportions["Extremely severe"]
+
+    depression_confirmed_percentage = (dcm + dcs + dce) / sum(depression_confirmed_proportions.values())
+
+    anxiety_confirmed_percentage = (acm + acs + ace) / sum(anxiety_confirmed_proportions.values())
+
+    depression_none_percentage = (dnm + dns + dne) / sum(depression_none_proportions.values())
+
+    anxiety_none_percentage = (anm + ans + ane) / sum(anxiety_none_proportions.values())
 
     return depression_confirmed_percentage, anxiety_confirmed_percentage, depression_none_percentage, \
         anxiety_none_percentage
@@ -415,10 +418,9 @@ def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
             elif word in all.keys():
                 all[word] += 1
 
-    with open("frequencies.json","w") as f:
-        json.dump(all,f)
+    with open("frequencies.json", "w") as f:
+        json.dump(all, f)
     f.close()
-
 
     return converted_docs, all
 
@@ -458,15 +460,19 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
 
 def extract_training_text(csvfile):
     training_text_labeled = []
-    training_text = []
     with open(csvfile, "r") as f:
-        file_reader = reader(f)
+        file_reader = f.readlines()
         for i in file_reader:
-            training_text_labeled.append(i)
-            training_text.append(i)
+            new_line = i.split(",")
+            training_text_labeled.append(new_line)
+    f.close()
 
-    for text in training_text:
-        text.pop(-1)
+    for labeled in training_text_labeled:
+        labeled[1] = labeled[1][0]
+
+    # print(training_text_labeled)
+
+    training_text = [[x[0]] for x in training_text_labeled]
 
     return training_text_labeled[::2], training_text[::2]
 
@@ -554,7 +560,7 @@ def main():
     elif choice == 2:
         try:
             file = str(input("Please enter the path of a file: "))
-            d,a=diagnose_document(file, corpus,swords, ERT, lex, nlp, training_lines, 0.7)
+            d, a = diagnose_document(file, corpus, swords, ERT, lex, nlp, training_lines, 0.7)
             print(f"The author of this document is predicted to have {d} depression and {a} anxiety")
         except TypeError:
             print("You gave an invalid file path")
