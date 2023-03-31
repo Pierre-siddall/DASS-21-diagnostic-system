@@ -202,7 +202,6 @@ def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model,
 
 
 def validate_documents(labelled_corpus, training_data):
-
     depression_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     anxiety_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     depression_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
@@ -268,42 +267,54 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
     X_training_scaled_a = scaled_X.fit_transform(X_train_a)
     X_testing_scaled_a = scaled_X.fit_transform(X_test_a)
 
+    line_values_depression = {"x": [], "y": []}
+    line_values_anxiety = {"x": [], "y": []}
+
     # Getting the optimal hyperparameters for the MLP
-    if optimise:
-        print("Getting optimised parameters for depression model")
-        op_depression = select_optimal_MLP_model(X_training_scaled_d, y_train_d)
-        print("Getting optimised parameters for anxiety model")
-        op_anxiety = select_optimal_MLP_model(X_training_scaled_a, y_train_a)
-        regr_d = MLPRegressor(activation=op_depression["activation"],
-                              alpha=op_depression["alpha"],
-                              hidden_layer_sizes=op_depression["hidden_layer_sizes"],
-                              learning_rate=op_depression["learning_rate"],
-                              solver=op_anxiety["solver"],
-                              max_iter=10000).fit(X_training_scaled_d, y_train_d)
+    for x in range(10):
+        if optimise:
+            print("Getting optimised parameters for depression model")
+            op_depression = select_optimal_MLP_model(X_training_scaled_d, y_train_d)
+            print("Getting optimised parameters for anxiety model")
+            op_anxiety = select_optimal_MLP_model(X_training_scaled_a, y_train_a)
+            regr_d = MLPRegressor(activation=op_depression["activation"],
+                                  alpha=op_depression["alpha"],
+                                  hidden_layer_sizes=op_depression["hidden_layer_sizes"],
+                                  learning_rate=op_depression["learning_rate"],
+                                  solver=op_anxiety["solver"],
+                                  max_iter=10000).fit(X_training_scaled_d, y_train_d)
 
-        regr_a = MLPRegressor(activation=op_anxiety["activation"],
-                              alpha=op_anxiety["alpha"],
-                              hidden_layer_sizes=op_anxiety["hidden_layer_sizes"],
-                              learning_rate=op_anxiety["learning_rate"],
-                              solver=op_anxiety["solver"],
-                              max_iter=10000).fit(X_training_scaled_a, y_train_a)
-    else:
-        regr_d = MLPRegressor(activation="identity",
-                              alpha=0.001,
-                              hidden_layer_sizes=(100, 100, 100),
-                              learning_rate="adaptive",
-                              solver="sgd",
-                              max_iter=10000).fit(X_training_scaled_d, y_train_d)
+            regr_a = MLPRegressor(activation=op_anxiety["activation"],
+                                  alpha=op_anxiety["alpha"],
+                                  hidden_layer_sizes=op_anxiety["hidden_layer_sizes"],
+                                  learning_rate=op_anxiety["learning_rate"],
+                                  solver=op_anxiety["solver"],
+                                  max_iter=10000).fit(X_training_scaled_a, y_train_a)
+        else:
+            regr_d = MLPRegressor(activation="identity",
+                                  alpha=0.001,
+                                  hidden_layer_sizes=(100, 100, 100),
+                                  learning_rate="adaptive",
+                                  solver="sgd",
+                                  max_iter=10000).fit(X_training_scaled_d, y_train_d)
 
-        regr_a = MLPRegressor(activation="identity",
-                              alpha=0.0001,
-                              hidden_layer_sizes=(150, 150, 150),
-                              learning_rate="invscaling",
-                              solver="sgd",
-                              max_iter=10000).fit(X_training_scaled_a, y_train_a)
+            regr_a = MLPRegressor(activation="identity",
+                                  alpha=0.0001,
+                                  hidden_layer_sizes=(150, 150, 150),
+                                  learning_rate="invscaling",
+                                  solver="sgd",
+                                  max_iter=10000).fit(X_training_scaled_a, y_train_a)
 
-    regr_d.predict(X_testing_scaled_d)
-    regr_a.predict(X_testing_scaled_a)
+        r2_depression = regr_d.score(X_testing_scaled_d, y_test_d)
+        r2_anxiety = regr_a.score(X_testing_scaled_a, y_test_a)
+
+        line_values_depression["x"].append(x)
+        line_values_anxiety["x"].append(x)
+        line_values_depression["y"].append(r2_depression)
+        line_values_anxiety["y"].append(r2_anxiety)
+
+    depression_dataframe = pd.DataFrame(data=line_values_depression)
+    anxiety_dataframe = pd.DataFrame(data=line_values_anxiety)
 
     print("The R squared score for the depression regressor is ", regr_d.score(X_testing_scaled_d, y_test_d))
     print("The R squared score for the anxiety regressor is ", regr_a.score(X_testing_scaled_a, y_test_a))
@@ -534,7 +545,7 @@ def main():
     lex = generate_lexicon(ERT)
     training_lines = read_training_data("training_data.txt")
 
-    print("Welcome to the DASS-21 diagnostic system for authors of text\n")
+    print("Welcome to the DASS-21 depression and anxiety diagnostic system for authors of text.\n")
     print("The options are:\n")
     print("(1) Validate\n")
     print("(2) Diagnose\n")
