@@ -1,7 +1,9 @@
 import json
 import warnings
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import spacy
 import math
 from csv import reader
@@ -267,11 +269,14 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
     X_training_scaled_a = scaled_X.fit_transform(X_train_a)
     X_testing_scaled_a = scaled_X.fit_transform(X_test_a)
 
-    line_values_depression = {"x": [], "y": []}
-    line_values_anxiety = {"x": [], "y": []}
+    line_values_depression = {"Iteration": [], "r2_value_depression": []}
+    line_values_anxiety = {"Iteration": [], "r2_value_anxiety": []}
+
+    n = 100
 
     # Getting the optimal hyperparameters for the MLP
-    for x in range(10):
+    for x in range(n):
+        print(f"Run {x+1} out of {n}")
         if optimise:
             print("Getting optimised parameters for depression model")
             op_depression = select_optimal_MLP_model(X_training_scaled_d, y_train_d)
@@ -308,16 +313,19 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
         r2_depression = regr_d.score(X_testing_scaled_d, y_test_d)
         r2_anxiety = regr_a.score(X_testing_scaled_a, y_test_a)
 
-        line_values_depression["x"].append(x)
-        line_values_anxiety["x"].append(x)
-        line_values_depression["y"].append(r2_depression)
-        line_values_anxiety["y"].append(r2_anxiety)
+        line_values_depression["Iteration"].append(x)
+        line_values_anxiety["Iteration"].append(x)
+        line_values_depression["r2_value_depression"].append(r2_depression)
+        line_values_anxiety["r2_value_anxiety"].append(r2_anxiety)
 
     depression_dataframe = pd.DataFrame(data=line_values_depression)
     anxiety_dataframe = pd.DataFrame(data=line_values_anxiety)
 
-    print("The R squared score for the depression regressor is ", regr_d.score(X_testing_scaled_d, y_test_d))
-    print("The R squared score for the anxiety regressor is ", regr_a.score(X_testing_scaled_a, y_test_a))
+    sns.lineplot(data=depression_dataframe,x="Iteration",y="r2_value_depression")
+    plt.show()
+
+    sns.lineplot(data=anxiety_dataframe,x="Iteration",y="r2_value_anxiety")
+    plt.show()
 
 
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
@@ -480,8 +488,6 @@ def extract_training_text(csvfile):
 
     for labeled in training_text_labeled:
         labeled[1] = labeled[1][0]
-
-    # print(training_text_labeled)
 
     training_text = [[x[0]] for x in training_text_labeled]
 
