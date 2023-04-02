@@ -169,6 +169,13 @@ def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model,
     emotion_doc = discover_emotional_words(tokenized_doc, lexicon, nlp_model, stopwords)
     document_vector = calculate_doc_vector(lexicon, ERT_data, corpus, emotion_doc, freq, add_output=False)
 
+    numerical_doc_vector = []
+    for v, t in document_vector:
+        numerical_doc_vector.append(v)
+
+    document_df = pd.DataFrame(numerical_doc_vector)
+    transposed_document_df = document_df.T
+
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
     y_anxiety = dataframe.loc[:, 212]
@@ -195,8 +202,8 @@ def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model,
                           solver="sgd",
                           max_iter=10000).fit(X_training_scaled_a, y_train_a)
 
-    depression_score = regr_d.predict(document_vector)
-    anxiety_score = regr_a.predict(document_vector)
+    depression_score = regr_d.predict(transposed_document_df)
+    anxiety_score = regr_a.predict(transposed_document_df)
 
     d_severity, a_severity = generate_dass_severity(depression_score, anxiety_score)
 
@@ -252,7 +259,7 @@ def validate_documents(labelled_corpus, training_data):
         anxiety_none_percentage
 
 
-def validate_MLP_regressor(dataframe, training_size, optimise=False):
+def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
     # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
@@ -272,11 +279,9 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
     line_values_depression = {"Iteration": [], "r2_value_depression": []}
     line_values_anxiety = {"Iteration": [], "r2_value_anxiety": []}
 
-    n = 100
-
     # Getting the optimal hyperparameters for the MLP
-    for x in range(n):
-        print(f"Run {x+1} out of {n}")
+    for x in range(iter):
+        print(f"Run {x + 1} out of {iter}")
         if optimise:
             print("Getting optimised parameters for depression model")
             op_depression = select_optimal_MLP_model(X_training_scaled_d, y_train_d)
@@ -313,6 +318,9 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
         r2_depression = regr_d.score(X_testing_scaled_d, y_test_d)
         r2_anxiety = regr_a.score(X_testing_scaled_a, y_test_a)
 
+        print(f"The R squared value of iteration {x + 1} for the depression regression model is {r2_depression}")
+        print(f"The R squared value of iteration {x + 1} for the anxiety regression model is {r2_anxiety}")
+
         line_values_depression["Iteration"].append(x)
         line_values_anxiety["Iteration"].append(x)
         line_values_depression["r2_value_depression"].append(r2_depression)
@@ -321,10 +329,10 @@ def validate_MLP_regressor(dataframe, training_size, optimise=False):
     depression_dataframe = pd.DataFrame(data=line_values_depression)
     anxiety_dataframe = pd.DataFrame(data=line_values_anxiety)
 
-    sns.lineplot(data=depression_dataframe,x="Iteration",y="r2_value_depression")
+    sns.lineplot(data=depression_dataframe, x="Iteration", y="r2_value_depression")
     plt.show()
 
-    sns.lineplot(data=anxiety_dataframe,x="Iteration",y="r2_value_anxiety")
+    sns.lineplot(data=anxiety_dataframe, x="Iteration", y="r2_value_anxiety")
     plt.show()
 
 
@@ -563,6 +571,7 @@ def main():
         choice = int(input("Please enter a choice between 1 and 3: "))
 
     if choice == 1:
+        iterations = int(input("How many times do you want to train the neural networks? : "))
         print("Here are the validation scores\n")
         dcp, acp, dnp, anp = validate_documents(corpus_labelled, training_lines)
         print(f"The training data which was confirmed to be depressed had {dcp} % of it's depression scores above the "
@@ -573,7 +582,7 @@ def main():
               f"the threshold")
         print(f"The training data which was not confirmed to be depressed had {anp} % of it's anxiety scores above "
               f"the threshold")
-        validate_MLP_regressor(training_lines, 0.7)
+        validate_MLP_regressor(training_lines, 0.7, iterations)
     elif choice == 2:
         try:
             file = str(input("Please enter the path of a file: "))
