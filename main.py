@@ -14,9 +14,6 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 
 
-################################  HELPER FUNCTIONS #################################################
-
-
 def read_training_data(filename):
     traininglines = []
 
@@ -128,7 +125,6 @@ def select_optimal_MLP_model(X_train, y_train):
     return clf.best_params_
 
 
-####################################### MAIN PROGRAM FUNCTIONS #######################################
 def generate_dass_severity(depression_score, anxiety_score):
     if 0 <= depression_score <= 9:
         depression_level = "Normal"
@@ -254,6 +250,11 @@ def validate_documents(labelled_corpus, training_data):
     depression_none_percentage = (dnm + dns + dne) / sum(depression_none_proportions.values())
 
     anxiety_none_percentage = (anm + ans + ane) / sum(anxiety_none_proportions.values())
+
+    print(f"The depression proportions of those confirmed to have depression are {depression_confirmed_proportions}")
+    print(f"The anxiety proportions of those confirmed to have depression are {anxiety_confirmed_proportions}")
+    print(f"The depression proportions of those confirmed to not have depression are {depression_none_proportions}")
+    print(f"The anxiety proportions of those confirmed to not have depression are {anxiety_none_proportions}")
 
     return depression_confirmed_percentage, anxiety_confirmed_percentage, depression_none_percentage, \
         anxiety_none_percentage
