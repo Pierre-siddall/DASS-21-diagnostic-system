@@ -243,18 +243,13 @@ def validate_documents(labelled_corpus, training_data):
     ans = anxiety_none_proportions["Severe"]
     ane = anxiety_none_proportions["Extremely severe"]
 
-    depression_confirmed_percentage = (dcm + dcs + dce) / sum(depression_confirmed_proportions.values())
+    depression_confirmed_percentage = ((dcm + dcs + dce) / sum(depression_confirmed_proportions.values())) * 100
 
-    anxiety_confirmed_percentage = (acm + acs + ace) / sum(anxiety_confirmed_proportions.values())
+    anxiety_confirmed_percentage = ((acm + acs + ace) / sum(anxiety_confirmed_proportions.values())) * 100
 
-    depression_none_percentage = (dnm + dns + dne) / sum(depression_none_proportions.values())
+    depression_none_percentage = ((dnm + dns + dne) / sum(depression_none_proportions.values())) * 100
 
-    anxiety_none_percentage = (anm + ans + ane) / sum(anxiety_none_proportions.values())
-
-    print(f"The depression proportions of those confirmed to have depression are {depression_confirmed_proportions}")
-    print(f"The anxiety proportions of those confirmed to have depression are {anxiety_confirmed_proportions}")
-    print(f"The depression proportions of those confirmed to not have depression are {depression_none_proportions}")
-    print(f"The anxiety proportions of those confirmed to not have depression are {anxiety_none_proportions}")
+    anxiety_none_percentage = ((anm + ans + ane) / sum(anxiety_none_proportions.values())) *100
 
     return depression_confirmed_percentage, anxiety_confirmed_percentage, depression_none_percentage, \
         anxiety_none_percentage
