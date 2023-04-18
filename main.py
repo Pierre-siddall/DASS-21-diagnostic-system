@@ -1,4 +1,5 @@
 import json
+import time
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
@@ -153,6 +154,7 @@ def generate_dass_severity(depression_score, anxiety_score):
 
 def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
+
     with open("frequencies.json", "r") as d:
         freq = json.load(d)
     d.close()
