@@ -116,6 +116,8 @@ def filter_tags(doc):
     :param doc:The tokenized document which can then be checked token by token
     :return:A new list of tokens which have whitelisted part of speech tags in the document passed to the function
     """
+
+    # This is a whitelist of part of speech tags that are allowed in a document
     whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
     new_doc = []
 
@@ -247,6 +249,7 @@ def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model,
     y_depression = dataframe.loc[:, 211]
     y_anxiety = dataframe.loc[:, 212]
 
+    # splitting the data in training and testing data
     X_train_d, X_test_d, y_train_d, y_test_d = train_test_split(X, y_depression, train_size=training_size)
     X_train_a, X_test_a, y_train_a, y_test_a = train_test_split(X, y_anxiety, train_size=training_size)
 
@@ -346,6 +349,7 @@ def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
     y_depression = dataframe.loc[:, 211]
     y_anxiety = dataframe.loc[:, 212]
 
+    # Splitting the data into training and testing data
     X_train_d, X_test_d, y_train_d, y_test_d = train_test_split(X, y_depression, train_size=training_size)
     X_train_a, X_test_a, y_train_a, y_test_a = train_test_split(X, y_anxiety, train_size=training_size)
 
