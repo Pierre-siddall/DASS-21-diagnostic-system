@@ -15,6 +15,13 @@ from sklearn.preprocessing import StandardScaler
 
 
 def read_training_data(filename):
+    """
+    This function reads the training data file and puts it into a dataframe which can be read
+    by the multilayer perceptron
+
+    :param filename: The file name of the training data file
+    :return: A pandas dataframe of tf-idf values alongside their respective DASS-21 scores
+    """
     traininglines = []
 
     with open(filename, "r") as f:
@@ -39,6 +46,11 @@ def read_training_data(filename):
 
 
 def make_bow(discoveries):
+    """
+    This function makes a binary bag of words by tallying the frequencies of words in a document
+    :param discoveries: A list of emotional words discovered in the document
+    :return: A dictionary containing the words in a document as keys and frequencies of each word as values
+    """
     bow = {}
 
     for term in discoveries:
@@ -52,6 +64,11 @@ def make_bow(discoveries):
 
 # Function 8
 def get_max_similarity(sims):
+    """
+    This function gets the word with the maximum similarity score
+    :param sims: The list of emotions and how similar they are to the token in the document currently being checked
+    :return: The word with the maximum similarity and it's associated score
+    """
     max_score = -1
     max_text = ''
 
@@ -64,6 +81,11 @@ def get_max_similarity(sims):
 
 
 def find_word_antonym(token):
+    """
+    This function finds the antonym of token using wordnet
+    :param token:The word in the document currently being checked
+    :return: The antonym of the token currently being checked
+    """
     antonyms = []
     for syn in wordnet.synsets(token):
         for lem in syn.lemmas():
@@ -77,6 +99,11 @@ def find_word_antonym(token):
 
 
 def is_negated(token):
+    """
+    This function checks to see if a word in a document is negated
+    :param token:The word in the document currently being checked
+    :return: A boolean value to see if the token currently being checked is negated
+    """
     if token.dep_ == 'neg':
         return True
     elif token.dep_ != 'neg':
@@ -84,7 +111,11 @@ def is_negated(token):
 
 
 def filter_tags(doc):
-    # Cite for the whitelist
+    """
+    This function filters out part of speech tags from a document to only keep part of speech tags which are needed
+    :param doc:The tokenized document which can then be checked token by token
+    :return:A new list of tokens which have whitelisted part of speech tags in the document passed to the function
+    """
     whitelist = ['NOUN', 'ADJ', 'ADV', 'VERB']
     new_doc = []
 
@@ -96,10 +127,22 @@ def filter_tags(doc):
 
 
 def tokenize_text(tokenizer, text):
+    """
+    This function tokenizes a document using SpaCy
+    :param tokenizer:The natural language model imported by SpaCy which will be used to tokenize the document
+    :param text: A string containing all the text in a document
+    :return: The tokenized document
+    """
     return tokenizer(text.lower())
 
 
 def generate_lexicon(emotions):
+    """
+    This function generates a lexicon of emotions which are found in the ERT dataset
+    :param emotions: The ERT data set as a list of records (represented by a list) containing emotions of an
+    individual and their associated DASS-21 scores
+    :return: A lexicon of emotions which has been checked against their lemmas
+    """
     lexicon = []
     wnl = WordNetLemmatizer()
 
@@ -113,6 +156,12 @@ def generate_lexicon(emotions):
 
 
 def select_optimal_MLP_model(X_train, y_train):
+    """
+    This function selects the optimal hyperparameters for the multilayer perceptron models
+    :param X_train: A dataframe of tf-ifd vectors based on the lexicon
+    :param y_train: A dataframe of the associated DASS-21 scores of each of the vectors in the X_train parameter
+    :return:A list of optimised hyperparameters for the model
+    """
     parameters = {
         "hidden_layer_sizes": [(100, 100, 100), (150, 150, 150), (200, 200, 200)],
         "activation": ["identity", "logistic", "tanh", "relu"], "solver": ["lbfgs", "sgd", "adam"],
@@ -126,6 +175,12 @@ def select_optimal_MLP_model(X_train, y_train):
 
 
 def generate_dass_severity(depression_score, anxiety_score):
+    """
+    This function interprets depression and anxiety DASS-21 scores into their correct classification
+    :param depression_score: An integer DASS-21 score representing the depression severity level of an individual
+    :param anxiety_score:An integer DASS-21 score representing the anxiety severity level of an individual
+    :return: The classification level of depression and anxiety
+    """
     if 0 <= depression_score <= 9:
         depression_level = "Normal"
     elif 10 <= depression_score <= 13:
@@ -153,6 +208,19 @@ def generate_dass_severity(depression_score, anxiety_score):
 
 def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
+
+    """
+    This function diagnoses an individual based off of text they have written
+    :param filename:The name of the file that contains an individuals text
+    :param corpus:The corpus of documents without labels
+    :param stopwords:The stopwords which are removed from the discovery of emotional words
+    :param ERT_data: The records of individuals in the ERT dataset
+    :param lexicon: The list of emotions in the ERT checked against their lemmas
+    :param nlp_model:The natural language processing model as imported by SpaCy
+    :param dataframe: The dataframe of X (tf-idf vectors) and Y (Associated DASS-21 scores) training data
+    :param training_size: The percentage of training data used represented by a value from 0 to 1
+    :return: The depression and anxiety classification of an individual
+    """
 
     with open("frequencies.json", "r") as d:
         freq = json.load(d)
@@ -208,6 +276,12 @@ def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model,
 
 
 def validate_documents(labelled_corpus, training_data):
+    """
+    This function validates the documents by showing the proportions of depression and anxiety severities in the corpus
+    :param labelled_corpus: The corpus of documents with their respective labels
+    :param training_data: The text file of X (tf-idf vectors) and Y (Associated DASS-21 scores) training data
+    :return: The percentages of documents above a threshold for both labels in the dataset
+    """
     depression_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     anxiety_confirmed_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
     depression_none_proportions = {"Normal": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Extremely severe": 0}
@@ -257,6 +331,14 @@ def validate_documents(labelled_corpus, training_data):
 
 
 def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
+    """
+    This process validates the multilayer perceptron regression models by outputting a line graph of the change in R
+    squared score over several runs
+    :param dataframe: The dataframe of X (tf-idf vectors) and Y (Associated DASS-21 scores) training data
+    :param training_size: The percentage of training data used represented by a value from 0 to 1
+    :param iter: The amount of times the multilayer perceptron models should be trained
+    :param optimise: A boolean denoting whether hyperparameter of the multilayer perceptron models should be optimised
+    """
     # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
     y_depression = dataframe.loc[:, 211]
@@ -334,6 +416,15 @@ def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
 
 
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
+    """
+
+    :param corpus:
+    :param ERT_data:
+    :param lexicon:
+    :param nlp_model:
+    :param stopwords:
+    :return:
+    """
     training_data = []
 
     print("Getting corpus data\n")
@@ -355,6 +446,13 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
 
 
 def add_vector_target_output(ERT_data, doc_vector, doc_bow):
+    """
+
+    :param ERT_data:
+    :param doc_vector:
+    :param doc_bow:
+    :return:
+    """
     doc_bow_list = []
 
     for key, value in doc_bow.items():
@@ -394,6 +492,17 @@ def add_vector_target_output(ERT_data, doc_vector, doc_bow):
 
 
 def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_output=True):
+
+    """
+
+    :param lexicon:
+    :param ERT_data:
+    :param corpus:
+    :param doc:
+    :param corpus_frequency:
+    :param add_output:
+    :return:
+    """
     vector = []
 
     doc_discoveries = make_bow(doc)
@@ -424,6 +533,14 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_o
 
 
 def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
+    """
+
+    :param corpus:
+    :param lexicon:
+    :param nlp_model:
+    :param stopwords:
+    :return:
+    """
     all = {}
     converted_docs = []
     count = 1
@@ -450,6 +567,14 @@ def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
 
 
 def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
+    """
+
+    :param doc:
+    :param lexicon:
+    :param nlp_model:
+    :param stopwords:
+    :return:
+    """
     discovered_words = []
 
     filtered_doc = filter_tags(doc)
@@ -483,6 +608,11 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
 
 
 def extract_training_text(csvfile):
+    """
+
+    :param csvfile:
+    :return:
+    """
     training_text_labeled = []
     with open(csvfile, "r") as f:
         file_reader = f.readlines()
@@ -500,6 +630,11 @@ def extract_training_text(csvfile):
 
 
 def get_ERT_data(csvfile):
+    """
+
+    :param csvfile:
+    :return:
+    """
     data = []
     with open(csvfile, "r") as f:
         file_reader = reader(f)
