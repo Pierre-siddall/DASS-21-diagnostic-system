@@ -67,7 +67,7 @@ def get_max_similarity(sims):
     """
     This function gets the word with the maximum similarity score
     :param sims: The list of emotions and how similar they are to the token in the document currently being checked
-    :return: The word with the maximum similarity and it's associated score
+    :return: The word with the maximum similarity, and it's associated score
     """
     max_score = -1
     max_text = ''
@@ -144,10 +144,12 @@ def generate_lexicon(emotions):
     :return: A lexicon of emotions which has been checked against their lemmas
     """
     lexicon = []
+    # The WordNetLemmatizer holds the lemmas of words
     wnl = WordNetLemmatizer()
 
     for emotion_record in emotions:
         for emotion in emotion_record[:-2]:
+            # Here the emotion that is being checked is lemmatized through the WordNetLemmatizer
             comparison_emotion = wnl.lemmatize(emotion.lower())
             if comparison_emotion not in lexicon:
                 lexicon.append(comparison_emotion)
@@ -168,6 +170,7 @@ def select_optimal_MLP_model(X_train, y_train):
         "learning_rate": ["constant", "invscaling", "adaptive"], "alpha": [0.0001, 0.0005, 0.001, 0.005],
     }
 
+    # Performs an exhaustive search of the hyperparameters
     clf = GridSearchCV(estimator=MLPRegressor(max_iter=10000), param_grid=parameters, cv=4, scoring="r2", n_jobs=10)
     clf.fit(X_train, y_train)
 
@@ -208,13 +211,12 @@ def generate_dass_severity(depression_score, anxiety_score):
 
 def diagnose_document(filename, corpus, stopwords, ERT_data, lexicon, nlp_model, dataframe,
                       training_size):
-
     """
     This function diagnoses an individual based off of text they have written
     :param filename:The name of the file that contains an individuals text
     :param corpus:The corpus of documents without labels
     :param stopwords:The stopwords which are removed from the discovery of emotional words
-    :param ERT_data: The records of individuals in the ERT dataset
+    :param ERT_data: A list of the records of individuals from the ERT dataset including emotions and DASS-21 scores
     :param lexicon: The list of emotions in the ERT checked against their lemmas
     :param nlp_model:The natural language processing model as imported by SpaCy
     :param dataframe: The dataframe of X (tf-idf vectors) and Y (Associated DASS-21 scores) training data
@@ -324,7 +326,7 @@ def validate_documents(labelled_corpus, training_data):
 
     depression_none_percentage = ((dnm + dns + dne) / sum(depression_none_proportions.values())) * 100
 
-    anxiety_none_percentage = ((anm + ans + ane) / sum(anxiety_none_proportions.values())) *100
+    anxiety_none_percentage = ((anm + ans + ane) / sum(anxiety_none_proportions.values())) * 100
 
     return depression_confirmed_percentage, anxiety_confirmed_percentage, depression_none_percentage, \
         anxiety_none_percentage
@@ -337,7 +339,7 @@ def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
     :param dataframe: The dataframe of X (tf-idf vectors) and Y (Associated DASS-21 scores) training data
     :param training_size: The percentage of training data used represented by a value from 0 to 1
     :param iter: The amount of times the multilayer perceptron models should be trained
-    :param optimise: A boolean denoting whether hyperparameter of the multilayer perceptron models should be optimised
+    :param optimise: A boolean denoting whether hyperparameters of the multilayer perceptron models should be optimised
     """
     # Split the dataframe up into relevant columns
     X = dataframe.loc[:, 0:210]
@@ -417,13 +419,13 @@ def validate_MLP_regressor(dataframe, training_size, iter, optimise=False):
 
 def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
     """
-
-    :param corpus:
-    :param ERT_data:
-    :param lexicon:
-    :param nlp_model:
-    :param stopwords:
-    :return:
+    This function creates a training data file which holds the vectors of documents and their associated DASS-21 scores
+    :param corpus:The corpus of documents without labels
+    :param ERT_data: A list of the records of individuals from the ERT dataset including emotions and DASS-21 scores
+    :param lexicon: The list of emotions in the ERT checked against their lemmas
+    :param nlp_model: The natural language processing model as imported by SpaCy
+    :param stopwords: The stopwords which are removed from the discovery of emotional words
+    :return: A list of strings containing the tf-idf vector of a document, and it's associated DASS-21 scores
     """
     training_data = []
 
@@ -447,11 +449,11 @@ def create_training_set(corpus, ERT_data, lexicon, nlp_model, stopwords):
 
 def add_vector_target_output(ERT_data, doc_vector, doc_bow):
     """
-
-    :param ERT_data:
-    :param doc_vector:
-    :param doc_bow:
-    :return:
+    This function uses 1st nearest neighbour to add the relevant scores for a document to its vector
+    :param ERT_data: A list of the records of individuals from the ERT dataset including emotions and DASS-21 scores
+    :param doc_vector:The tf-idf vector of a document
+    :param doc_bow: The binary bag of words of a document
+    :return: The updated document vector which includes the relevant DASS-21 scores at the end
     """
     doc_bow_list = []
 
@@ -492,16 +494,15 @@ def add_vector_target_output(ERT_data, doc_vector, doc_bow):
 
 
 def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_output=True):
-
     """
-
-    :param lexicon:
-    :param ERT_data:
-    :param corpus:
-    :param doc:
-    :param corpus_frequency:
-    :param add_output:
-    :return:
+    This function calculates the tf-idf vector using all the emotions in the lexicon for a document
+    :param lexicon:The list of emotions in the ERT checked against their lemmas
+    :param ERT_data:A list of the records of individuals from the ERT dataset including emotions and DASS-21 scores
+    :param corpus:The corpus of documents without labels
+    :param doc:The tokenized document which can then be checked token by token
+    :param corpus_frequency:The bag of words for the whole corpus
+    :param add_output: A boolean value determining whether a target output DASS-21 score should be added to the vector
+    :return: The tf-idf vector of a document either with or without the target output
     """
     vector = []
 
@@ -534,12 +535,13 @@ def calculate_doc_vector(lexicon, ERT_data, corpus, doc, corpus_frequency, add_o
 
 def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
     """
-
-    :param corpus:
-    :param lexicon:
-    :param nlp_model:
-    :param stopwords:
-    :return:
+    This function gets the emotions for each document in the corpus and the frequencies across the whole corpus
+    :param corpus:The corpus of documents without labels :param lexicon:The list of emotions in the ERT checked
+    against their lemmas
+    :param nlp_model:The natural language processing model as imported by SpaCy
+    :param stopwords:The stopwords which are removed from the discovery of emotional words
+    :return: The emotions discovered in all documents in the corpus and the frequencies of words discovered across
+    the whole corpus
     """
     all = {}
     converted_docs = []
@@ -568,12 +570,12 @@ def get_corpus_data(corpus, lexicon, nlp_model, stopwords):
 
 def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
     """
-
-    :param doc:
-    :param lexicon:
-    :param nlp_model:
-    :param stopwords:
-    :return:
+    This function discovers emotional words in the text by comparing emotions in the lexicon to tokens in the document
+    :param doc:The tokenized document which can then be checked token by token
+    :param lexicon:The list of emotions in the ERT checked against their lemmas
+    :param nlp_model:The natural language processing model as imported by SpaCy
+    :param stopwords:The stopwords which are removed from the discovery of emotional words
+    :return: A list of emotional words discovered in a document
     """
     discovered_words = []
 
@@ -591,6 +593,7 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
                 if token.text not in stopwords and type(base) is not None and type(comparison) is not None:
                     if negated:
                         new_comparison = nlp_model(find_word_antonym(comparison.text))
+                        # Checks the similarity using a pretrained model in SpaCy
                         sim_score = base.similarity(new_comparison)
                         similarities.append((new_comparison.text, sim_score))
                     else:
@@ -609,9 +612,10 @@ def discover_emotional_words(doc, lexicon, nlp_model, stopwords):
 
 def extract_training_text(csvfile):
     """
-
-    :param csvfile:
-    :return:
+    This function extracts the training text from the reddit dataset to create a corpus :param csvfile: This is the
+    name of the csv file which contains the reddit text dataset
+    :return: A list of sampled text from the reddit dataset with labels and a list of sampled text from the reddit
+    dataset without labels
     """
     training_text_labeled = []
     with open(csvfile, "r") as f:
@@ -631,9 +635,10 @@ def extract_training_text(csvfile):
 
 def get_ERT_data(csvfile):
     """
-
-    :param csvfile:
-    :return:
+    This function gets the records of individuals in the ERT dataset including emotions recalled an DASS-21 scores
+    for depression and anxiety
+    :param csvfile: The csv file containing the ERT dataset
+    :return: A list of lists containing each individual's emotional recalls and their associated DASS-21 scores
     """
     data = []
     with open(csvfile, "r") as f:
